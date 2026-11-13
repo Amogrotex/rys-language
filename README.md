@@ -58,6 +58,10 @@ RYS can cache compiled bytecode in `.rysc` files. Set `RYS_NO_CACHE=1` to disabl
 RYS_NO_CACHE=1 ./target/release/rys program.rys
 ```
 
+## File extensions
+
+RYS programs use the `.rys` extension; see [`examples/hello.rys`](examples/hello.rys). The files under `src/` use `.rs` because the RYS compiler and virtual machine are themselves written in Rust. Cargo compiles those Rust files to produce the `rys` executable, which then runs `.rys` programs. Cached bytecode uses `.rysc`.
+
 ## Repository layout
 
 - `src/main.rs` — lexer, parser, built-ins, and command-line interface

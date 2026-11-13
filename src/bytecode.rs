@@ -1,19 +1,7 @@
-// ============================================================
-//  RYS bytecode compiler + stack VM — v0.3
-//
-//  v0.3 upgrades over v0.2:
-//   • constant pool  — Const(u32) into a deduplicated Vec<Value>
-//                      per function; instructions are 16 bytes
-//   • u32 jumps      — compact, patchable
-//   • packed loop target in IterNext (high bit = global slot)
-//   • copyable ops   — no chunk borrow held during dispatch
-//   • local hot state — stack/globals/frames moved into locals,
-//                      func/ip/base cached across the dispatch loop
-//   • int fast paths  — arithmetic & comparisons skip Value dispatch
-//   • fused compare-branch ops (LtJf, GeJf, ...) for conditions
-//   • constant folding at compile time
-//   • persistent VM global table (fixes REPL variable persistence)
-// ============================================================
+//! Bytecode compiler, virtual machine, and disassembler for RYS.
+//!
+//! The compiler turns parsed programs into instructions and interns global
+//! names in the VM, allowing values to persist between REPL inputs.
 
 use std::cell::RefCell;
 use std::collections::HashMap;
@@ -26,7 +14,7 @@ use crate::{
 
 const GLOBAL_FLAG: u32 = 0x8000_0000;
 
-// ============================= INSTRUCTIONS =============================
+// Instructions
 
 #[derive(Clone, Copy)]
 pub enum Op {
@@ -104,7 +92,7 @@ pub struct Program {
     pub funcs: Vec<Rc<FunctionProto>>,
 }
 
-// ============================= COMPILER =============================
+// Compiler
 
 struct LoopCtx {
     continues: Vec<usize>,
@@ -265,8 +253,7 @@ impl<'a> Compiler<'a> {
         slot
     }
 
-    /// Same resolution rules as before: inside a function, locals shadow
-    /// globals; at top level every variable lives in the global table.
+    /// Inside functions, locals shadow globals. Top-level names are global.
     fn get_op(&mut self, name: &str) -> Op {
         if self.in_func {
             if let Some(i) = self.local_slot(name) {
@@ -738,7 +725,7 @@ pub fn compile(
     Ok(Program { main, funcs: c.funcs })
 }
 
-// ============================= VM =============================
+// Vm
 
 struct Frame {
     func: Rc<FunctionProto>,
@@ -1363,7 +1350,7 @@ impl Vm {
     }
 }
 
-// ============================= DISASSEMBLER =============================
+// Disassembler
 
 fn describe(op: &Op, names: &[String]) -> String {
     fn g(names: &[String], id: u32) -> String {

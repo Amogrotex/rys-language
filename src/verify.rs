@@ -1,21 +1,9 @@
-// ============================================================
-//  RYS bytecode verifier
-//
-//  Runs over every function prototype before execution and proves
-//  the instruction stream is well-formed:
-//
-//   • every jump target is in bounds and is a real instruction
-//   • the operand stack never underflows on any reachable path
-//   • every path reaching a given instruction agrees on stack depth
-//   • every path that falls through the end of code is empty
-//   • every `return` path is consistent
-//   • constant indices / local slots / closure indices are in range
-//   • ITERNEXT iterates only over slots filled by ITERINIT
-//
-//  This is the same class of check the JVM performs on class files:
-//  it is what makes a corrupt or hand-written .rysc file harmless
-//  instead of a segfault or memory corruption.
-// ============================================================
+//! Check compiled bytecode before the VM executes it.
+//!
+//! The verifier checks instruction operands, control flow and stack depths.
+//! It also checks that iteration slots have a preceding initializer. This is
+//! a conservative syntactic check, not a proof that every path initializes
+//! the slot. Verification does not guarantee that a program is harmless.
 
 use crate::bytecode::{FunctionProto, Op, Program};
 
@@ -278,7 +266,7 @@ fn verify_proto(f: &FunctionProto, func_count: usize, is_entry: bool, check_func
         }
     }
 
-    // ---- every ITERNEXT must be dominated by an ITERINIT for the same slots ----
+    // Check that each ITERNEXT has an earlier ITERINIT for the same slots.
     // Conservative syntactic check: the cursor slot must be written by an
     // ITERINIT somewhere earlier in the same function.
     for (ip, src) in iter_source.iter().enumerate() {
@@ -321,8 +309,7 @@ fn verify_proto(f: &FunctionProto, func_count: usize, is_entry: bool, check_func
     Ok(Report { instructions: n, max_stack })
 }
 
-/// Verify a whole program. Runs before every execution; cost is linear in the
-/// number of instructions plus edges, i.e. effectively free next to running it.
+/// Verify each function in a compiled program before execution.
 pub fn verify(prog: &Program) -> Result<Report, String> {
     let total_funcs = prog.funcs.len() + 1;
 
@@ -342,7 +329,7 @@ pub fn verify(prog: &Program) -> Result<Report, String> {
     Ok(Report { instructions, max_stack })
 }
 
-// ============================= TESTS =============================
+// Tests
 //
 // These build instruction streams by hand — including deliberately broken
 // ones — and assert that verification catches exactly what it should.

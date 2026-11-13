@@ -1,5 +1,4 @@
-// ============================================================
-//  RYS compiled-bytecode cache (.rysc)
+//! Read and write the RYS compiled-bytecode cache (`.rysc`).
 //
 //  Writing a compiled program to disk means a rerun of an unchanged
 //  source file skips lexing, parsing and compiling entirely.
@@ -29,8 +28,8 @@
 //  Any structural problem — bad magic, wrong version, source hash
 //  mismatch, checksum failure, truncated data — makes load() return
 //  None and the caller falls back to compiling the source. A cache
-//  miss is always safe; the verifier then re-checks whatever loads.
-// ============================================================
+//  miss falls back to compilation; loaded bytecode is verified before use.
+//
 
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
@@ -99,7 +98,7 @@ mod ctag {
     pub const NIL: u8 = 5;
 }
 
-// ============================= HASHING =============================
+// Hashing
 
 /// FNV-1a over the source bytes: stable across processes, unlike DefaultHasher.
 pub fn source_hash(src: &str) -> u64 {
@@ -147,7 +146,7 @@ pub fn cache_path_for(src_path: &Path) -> Option<PathBuf> {
     Some(dir.join(format!("{}-{:016x}.rysc", stem, path_hasher.finish())))
 }
 
-// ============================= WRITER =============================
+// Writer
 
 struct Writer {
     buf: Vec<u8>,
@@ -357,7 +356,7 @@ pub fn serialize(prog: &Program, globals: &[String], src_hash: u64, repl: bool) 
     w.buf
 }
 
-// ============================= READER =============================
+// Reader
 
 struct Reader<'a> {
     buf: &'a [u8],

@@ -1,12 +1,7 @@
-// ============================================================
-//  RYS v0.4.0 — "Rapid Yet Safe"
-//  A programming language with Python-style syntax.
-//  File format: .rys
-//  v0.2.0: bytecode compiler + stack VM (replaces the tree-walker)
-//  v0.3.0: constant pool, fused compare-branch ops, int fast paths,
-//          local hot state, constant folding, persistent global table
-//  v0.4.0: bytecode verifier, .rysc compiled-bytecode cache, zero deps
-// ============================================================
+//! RYS language frontend and command-line entry point.
+//!
+//! Source files use the `.rys` extension. This module tokenizes and parses
+//! them, defines runtime values and built-ins, and starts the VM or REPL.
 
 mod bytecode;
 mod cache;
@@ -18,7 +13,7 @@ use std::rc::Rc;
 
 use bytecode::Vm;
 
-// ============================= LEXER =============================
+// Lexer
 
 #[derive(Debug, Clone, PartialEq)]
 enum Tok {
@@ -250,7 +245,7 @@ fn lex_line(content: &str, line: usize, out: &mut Vec<Token>) -> Result<(), Stri
     Ok(())
 }
 
-// ============================= AST =============================
+// Ast
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 enum BinOp {
@@ -295,7 +290,7 @@ enum Stmt {
     Continue(usize),
 }
 
-// ============================= PARSER =============================
+// Parser
 
 struct Parser {
     toks: Vec<Token>,
@@ -715,7 +710,7 @@ impl Parser {
     }
 }
 
-// ============================= VALUES =============================
+// Values
 
 #[derive(Clone)]
 enum Value {
@@ -816,7 +811,7 @@ fn as_num(v: &Value) -> Option<f64> {
     }
 }
 
-// ============================= BUILT-INS =============================
+// Built-Ins
 
 const BUILTINS: &[&str] = &[
     "print", "len", "str", "int", "float", "input", "push", "pop",
@@ -1003,7 +998,7 @@ fn binary(op: BinOp, l: Value, r: Value, line: usize) -> Result<Value, String> {
     }
 }
 
-// ============================= BUILT-INS =============================
+// Built-Ins
 
 fn call_builtin(name: &str, args: Vec<Value>, line: usize) -> Result<Value, String> {
     match name {
@@ -1162,7 +1157,7 @@ fn call_builtin(name: &str, args: Vec<Value>, line: usize) -> Result<Value, Stri
     }
 }
 
-// ============================= DRIVER =============================
+// Driver
 
 fn parse(src: &str) -> Result<Vec<Stmt>, String> {
     let toks = lex(src)?;
