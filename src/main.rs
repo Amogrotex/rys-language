@@ -377,7 +377,7 @@ impl Parser {
                     Tok::Ident(p) => params.push(p),
                     t => return Err(format!("line {}: expected parameter name, found '{}'", line, show_tok(&t))),
                 }
-                if !self.eat(&Tok::Comma) {
+                if !self.eat(&Tok::Comma) || self.peek() == &Tok::RParen {
                     break;
                 }
             }
@@ -656,7 +656,7 @@ impl Parser {
                     if self.peek() != &Tok::RParen {
                         loop {
                             args.push(self.parse_expr()?);
-                            if !self.eat(&Tok::Comma) {
+                            if !self.eat(&Tok::Comma) || self.peek() == &Tok::RParen {
                                 break;
                             }
                         }
@@ -697,7 +697,7 @@ impl Parser {
                 if self.peek() != &Tok::RBracket {
                     loop {
                         items.push(self.parse_expr()?);
-                        if !self.eat(&Tok::Comma) {
+                        if !self.eat(&Tok::Comma) || self.peek() == &Tok::RBracket {
                             break;
                         }
                     }
@@ -816,6 +816,7 @@ fn as_num(v: &Value) -> Option<f64> {
 const BUILTINS: &[&str] = &[
     "print", "len", "str", "int", "float", "input", "push", "pop",
     "abs", "min", "max", "sqrt", "range", "type",
+    "upper", "lower", "trim", "split", "join", "contains", "reverse",
 ];
 
 fn norm_index(i: i64, len: usize, line: usize) -> Result<usize, String> {
@@ -1147,6 +1148,70 @@ fn call_builtin(name: &str, args: Vec<Value>, line: usize) -> Result<Value, Stri
             },
             _ => Err(format!("line {}: range() takes 1 or 2 arguments", line)),
         },
+        "upper" | "lower" | "trim" => {
+            if args.len() != 1 {
+                return Err(format!("line {}: {}() takes exactly 1 argument", line, name));
+            }
+            match &args[0] {
+                Value::Str(s) => Ok(Value::Str(match name {
+                    "upper" => s.to_uppercase(),
+                    "lower" => s.to_lowercase(),
+                    _ => s.trim().to_string(),
+                })),
+                v => Err(format!("line {}: {}() needs a string, got {}", line, name, type_name(v))),
+            }
+        }
+        "split" | "contains" => {
+            if args.len() != 2 {
+                return Err(format!("line {}: {}() takes exactly 2 arguments", line, name));
+            }
+            match (&args[0], &args[1]) {
+                (Value::Str(s), Value::Str(needle)) => {
+                    if name == "contains" {
+                        Ok(Value::Bool(s.contains(needle.as_str())))
+                    } else if needle.is_empty() {
+                        Err(format!("line {}: split() separator cannot be empty", line))
+                    } else {
+                        let parts = s.split(needle.as_str()).map(|part| Value::Str(part.to_string())).collect();
+                        Ok(Value::Array(Rc::new(RefCell::new(parts))))
+                    }
+                }
+                _ => Err(format!("line {}: {}() needs two strings", line, name)),
+            }
+        }
+        "join" => {
+            if args.len() != 2 {
+                return Err(format!("line {}: join() takes an array and a separator", line));
+            }
+            match (&args[0], &args[1]) {
+                (Value::Array(items), Value::Str(separator)) => {
+                    let items = items.borrow();
+                    let mut strings = Vec::with_capacity(items.len());
+                    for item in items.iter() {
+                        match item {
+                            Value::Str(s) => strings.push(s.as_str()),
+                            _ => return Err(format!("line {}: join() array must contain only strings", line)),
+                        }
+                    }
+                    Ok(Value::Str(strings.join(separator)))
+                }
+                _ => Err(format!("line {}: join() needs an array and a string separator", line)),
+            }
+        }
+        "reverse" => {
+            if args.len() != 1 {
+                return Err(format!("line {}: reverse() takes exactly 1 argument", line));
+            }
+            match &args[0] {
+                Value::Str(s) => Ok(Value::Str(s.chars().rev().collect())),
+                Value::Array(items) => {
+                    let mut reversed = items.borrow().clone();
+                    reversed.reverse();
+                    Ok(Value::Array(Rc::new(RefCell::new(reversed))))
+                }
+                v => Err(format!("line {}: reverse() needs a string or array, got {}", line, type_name(v))),
+            }
+        }
         "type" => {
             if args.len() != 1 {
                 return Err(format!("line {}: type() takes exactly 1 argument", line));
@@ -1240,6 +1305,10 @@ fn real_main() -> i32 {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
         repl();
+        return 0;
+    }
+    if args[1] == "--help" || args[1] == "-h" {
+        println!("RYS — Rapid Yet Safe\n\nUsage: rys [OPTIONS] [FILE]\n\nRun a .rys file, or start the REPL when no file is given.\n\nOptions:\n  -h, --help          Show this help\n  -v, --version       Show the version\n  -d, --dump FILE     Print compiled bytecode\n\nSet RYS_NO_CACHE to disable the bytecode cache.");
         return 0;
     }
     if args[1] == "--version" || args[1] == "-v" {

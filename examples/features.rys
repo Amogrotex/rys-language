@@ -1,0 +1,10 @@
+# Trailing commas are allowed in parameter lists, calls, and arrays.
+def greet(name,):
+    return "Hello, " + trim(name)
+
+names = ["RYS", "world",]
+print(greet("  RYS  ",))
+print(upper(join(names, " & ")))
+print(split("red,green,blue", ","))
+print(contains("Rapid Yet Safe", "Safe"))
+print(reverse(names))

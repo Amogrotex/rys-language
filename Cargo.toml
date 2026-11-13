@@ -11,8 +11,5 @@ panic = "abort"
 strip = true
 opt-level = 3
 
-# ZERO dependencies. Everything — lexer, parser, bytecode compiler, VM,
-# garbage collector, x86-64 encoder and JIT — is written from scratch in
-# this repository. Nothing is downloaded at build time beyond the Rust
-# toolchain itself.
+# RYS has no external Cargo dependencies.
 [dependencies]

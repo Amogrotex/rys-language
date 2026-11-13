@@ -34,7 +34,7 @@ cd rys-language
 cargo build --release
 ```
 
-The binary is created at `target/release/rys` (or `target/release/rys.exe` on Windows). The project declares no external Cargo dependencies. The repository also includes a prebuilt Linux x86-64 binary from the original project archive; build from source for other platforms.
+The binary is created at `target/release/rys` (or `target/release/rys.exe` on Windows). The project declares no external Cargo dependencies. The repository also includes a prebuilt Linux x86-64 binary. Build from source for other platforms.
 
 ## Usage
 
@@ -48,7 +48,8 @@ The binary is created at `target/release/rys` (or `target/release/rys.exe` on Wi
 # Display compiled bytecode
 ./target/release/rys --dump program.rys
 
-# Display the version
+# Display help or the version
+./target/release/rys --help
 ./target/release/rys --version
 ```
 
@@ -57,6 +58,23 @@ RYS can cache compiled bytecode in `.rysc` files. Set `RYS_NO_CACHE=1` to disabl
 ```sh
 RYS_NO_CACHE=1 ./target/release/rys program.rys
 ```
+
+## Language and built-ins
+
+RYS supports functions, conditionals, loops, arrays, ranges and Python-style indentation. Trailing commas are allowed in function parameters, function calls and array literals.
+
+Alongside built-ins such as `print`, `len`, `push`, `pop`, `range` and `type`, RYS provides:
+
+| Function | Description |
+| --- | --- |
+| `upper(text)`, `lower(text)` | Return a string with Unicode case conversion. |
+| `trim(text)` | Remove surrounding whitespace. |
+| `split(text, separator)` | Split a string into an array; the separator must not be empty. |
+| `join(array, separator)` | Join an array of strings. |
+| `contains(text, substring)` | Check whether a string contains a substring. |
+| `reverse(value)` | Return a reversed string or a new reversed array without modifying the original. String reversal works on Unicode scalar values. |
+
+See [`examples/features.rys`](examples/features.rys) for examples. Run the test suite with `cargo test`.
 
 ## File extensions
 
