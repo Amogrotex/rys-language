@@ -1001,7 +1001,7 @@ fn binary(op: BinOp, l: Value, r: Value, line: usize) -> Result<Value, String> {
 
 // Built-Ins
 
-fn call_builtin(name: &str, args: Vec<Value>, line: usize) -> Result<Value, String> {
+fn call_builtin(name: &str, args: &[Value], line: usize) -> Result<Value, String> {
     match name {
         "print" => {
             let parts: Vec<String> = args.iter().map(display).collect();
@@ -1109,7 +1109,7 @@ fn call_builtin(name: &str, args: Vec<Value>, line: usize) -> Result<Value, Stri
                     v => vec![v.clone()],
                 }
             } else {
-                args.clone()
+                args.to_vec()
             };
             if items.is_empty() {
                 return Err(format!("line {}: {}() of an empty array", line, name));

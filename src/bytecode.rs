@@ -1165,12 +1165,12 @@ impl Vm {
                     let callee = stack[pos].clone();
                     match callee {
                         Value::Builtin(name) => {
-                            // move args out of the operand stack without the
-                            // per-call Vec allocation: drain into scratch
+                            // Reuse the allocation across built-in calls.
                             args_scratch.clear();
                             args_scratch.extend(stack.drain(pos + 1..));
                             stack.truncate(pos);
-                            let v = call_builtin(name, std::mem::take(&mut args_scratch), line)?;
+                            let v = call_builtin(name, &args_scratch, line)?;
+                            args_scratch.clear();
                             stack.push(v);
                         }
                         Value::Closure(f) => {
@@ -1220,9 +1220,24 @@ impl Vm {
                             stack.push(v);
                         }
                         (Value::Str(s), Value::Int(i)) => {
-                            let chars: Vec<char> = s.chars().collect();
-                            let ix = norm_index(i, chars.len(), line)?;
-                            stack.push(Value::Str(chars[ix].to_string()));
+                            // ASCII permits direct byte indexing. For Unicode,
+                            // count scalar values only when needed for bounds or
+                            // negative indexes; never allocate a temporary array.
+                            let ch = if s.is_ascii() {
+                                let ix = norm_index(i, s.len(), line)?;
+                                s.as_bytes()[ix] as char
+                            } else if i >= 0 {
+                                match usize::try_from(i).ok().and_then(|ix| s.chars().nth(ix)) {
+                                    Some(ch) => ch,
+                                    None => {
+                                        return Err(format!("line {}: index {} out of range (length {})", line, i, s.chars().count()));
+                                    }
+                                }
+                            } else {
+                                let ix = norm_index(i, s.chars().count(), line)?;
+                                s.chars().nth(ix).unwrap()
+                            };
+                            stack.push(Value::Str(ch.to_string()));
                         }
                         (o, i) => {
                             return Err(format!(

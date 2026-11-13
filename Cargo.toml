@@ -13,3 +13,8 @@ opt-level = 3
 
 # RYS has no external Cargo dependencies.
 [dependencies]
+
+[profile.profiling]
+inherits = "release"
+debug = true
+strip = false

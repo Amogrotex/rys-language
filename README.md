@@ -87,6 +87,10 @@ RYS programs use the `.rys` extension; see [`examples/hello.rys`](examples/hello
 - `src/verify.rs` — bytecode verifier
 - `src/cache.rs` — compiled-bytecode cache
 
+## Performance
+
+RYS uses a bytecode VM and a compiled-bytecode cache. See the [performance guide](docs/performance.md) for benchmarks, profiling instructions and the proposed JIT and native compilation roadmap. Neither a JIT nor an ahead-of-time native compiler is implemented yet.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please describe the problem or proposed change and include a minimal example when reporting a bug. Before submitting code, build the project and run `cargo test`.
